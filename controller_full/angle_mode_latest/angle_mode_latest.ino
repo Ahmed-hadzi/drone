@@ -108,9 +108,9 @@ void gyro_signal(){
   RatePitch = (float)GyroY/65.5;
   RateYaw = (float)GyroZ/65.5;
   
-  AccX = (float)AccXLSB/4096 - 0.05; // X CALIBRATION
-  AccY = (float)AccYLSB/4096 + 0.01; // Y CALIBRATION
-  AccZ = (float)AccZLSB/4096 - 0.11; // Z CALIBRATION
+  AccX = (float)AccXLSB/4096 - 0.04; // X CALIBRATION
+  AccY = (float)AccYLSB/4096 + 0.02; // Y CALIBRATION
+  AccZ = (float)AccZLSB/4096 - 0.07; // Z CALIBRATION
 
   AngleRoll=atan(AccY/sqrt(AccX*AccX+AccZ*AccZ))*1/(3.142/180);
   AnglePitch = -atan(AccX/sqrt(AccY*AccY+AccZ*AccZ))*1/(3.142/180);
