@@ -34,7 +34,6 @@ void setup(){
   Serial.begin(115200);
 
   // DISPLAY SETUP
-  delay(250);
   display.begin(i2c_Address, true);
   display.display();
   delay(250);
