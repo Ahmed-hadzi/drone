@@ -67,7 +67,7 @@ void kalman_1d(float KalmanState, float KalmanUncertainty, float KalmanInput, fl
 }
 
 void battery_voltage(void){
-  Voltage = (float)analogRead(15)/62;
+  Voltage=(float)analogRead(15)/33.325; // CUSTOM BATTERY DIVIDER
   Current=(float)analogRead(21)*0.089;
 }
 
@@ -231,6 +231,7 @@ void setup(){
 
   while(ReceiverValue[2] < 1020 || ReceiverValue[2] > 1050){
     read_receiver();
+    Serial.println(ReceiverValue[2]);
     delay(4);
   }
 
@@ -243,7 +244,7 @@ void setup(){
   display.display();
 
   read_receiver();
-  while(ReceiverValue[4]<1400){
+  while(ReceiverValue[3]<1400){
     digitalWrite(13, HIGH);
     read_receiver();
     delay(100);
@@ -263,6 +264,7 @@ void setup(){
 
   delay(1000);
   display.clearDisplay();
+  display.display();
 
 }
 
@@ -284,17 +286,24 @@ void loop() {
   DesiredAngleRoll=0.10*(ReceiverValue[0]-1500);
   DesiredAnglePitch = 0.10*(ReceiverValue[1]-1500);
 
-  InputThrottle=ReceiverValue[3];
-  if((ReceiverValue[4]>1200) && (ReceiverValue[4]<1300) && ch4comode && !comexc){
+  InputThrottle=ReceiverValue[2];
+  if((ReceiverValue[3]>1200) && (ReceiverValue[3]<1300) && ch4comode && !comexc){
     Serial.println(" COMMAND EXECUTED ");
     comexc = true;
     // ACTIVATE COMMAND
     DesiredRateYaw=0;
   } else{
-    DesiredRateYaw=0.15*((2*(ReceiverValue[4]-1500)+1000)-1500); // Normal yaw rate
+    DesiredRateYaw=0.15*((2*(ReceiverValue[3]-1500)+1000)-1500); // Normal yaw rate
   }
 
-  if((ReceiverValue[4]==1000) && !comexc){
+  // Yaw deadzone and remapping
+  if((DesiredRateYaw<4.00)&&(DesiredRateYaw>0)){
+    DesiredRateYaw = 0;
+  } else if(DesiredRateYaw>=4.00){
+    DesiredRateYaw = ((DesiredRateYaw-4)/71)*75;
+  }
+
+  if((ReceiverValue[3]==1000) && !comexc){
     ch4comode = true;
         digitalWrite(13, HIGH);
   } else{
@@ -383,6 +392,8 @@ void loop() {
   Serial.print(" Motor 3: ");
   Serial.print(MotorInput3);
   Serial.print(" Motor 4: ");
-  Serial.println(MotorInput4);
+  Serial.print(MotorInput4);
+  Serial.print(" Desired YAW: ");
+  Serial.println(DesiredRateYaw);
 
 }

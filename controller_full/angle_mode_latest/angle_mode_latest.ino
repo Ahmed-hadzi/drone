@@ -55,7 +55,7 @@ void kalman_1d(float KalmanState, float KalmanUncertainty, float KalmanInput, fl
 }
 
 void battery_voltage(void){
-  Voltage = (float)analogRead(15)/62;
+  Voltage=(float)analogRead(15)/33.325; // CUSTOM BATTERY DIVIDER
   Current=(float)analogRead(21)*0.089;
 }
 
