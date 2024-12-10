@@ -9,6 +9,8 @@
 #define OLED_RESET -1   //   QT-PY / XIAO
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+bool lowbat = false;
+
 bool ch4comode = false;
 bool comexc = false;
 
@@ -175,7 +177,7 @@ void setup(){
   pinMode(5, OUTPUT);
   digitalWrite(5, HIGH);
   pinMode(13, OUTPUT);
-  digitalWrite(13, HIGH);
+  digitalWrite(13, LOW);
 
   Wire.setClock(400000);
   Wire.begin();
@@ -186,8 +188,30 @@ void setup(){
   Wire.endTransmission();
 
   display.clearDisplay();
+
+  battery_voltage();
+  if(Voltage>8.3){
+    BatteryAtStart=BatteryDefault;
+  } else if (Voltage<7.5){
+    lowbat=true;
+    BatteryAtStart=30/100*BatteryDefault;
+  } else{
+    BatteryAtStart=(82*Voltage-580)/100*BatteryDefault;
+  }
+
+  display.clearDisplay();
+  if(lowbat){
+    display.setCursor(0, 9);
+    display.setTextColor(SH110X_BLACK, SH110X_WHITE);
+    display.println("BATTERY LOW");
+  }
+  display.setTextColor(SH110X_WHITE, SH110X_BLACK);
   display.setCursor(0, 27);
   display.println("CALIBRATING...");
+  display.setCursor(0, 54);
+  display.print("BATTERY: ");
+  display.print(Voltage);
+  display.println("V");
   display.display();
 
   for(RateCalibrationNumber=0; RateCalibrationNumber<2000; RateCalibrationNumber++){
@@ -210,23 +234,21 @@ void setup(){
   pinMode(6, OUTPUT);
   digitalWrite(6, HIGH);
 
-  battery_voltage();
-  if(Voltage>8.3){
-    digitalWrite(5, LOW);
-    BatteryAtStart=BatteryDefault;
-  } else if (Voltage<7.5){
-    BatteryAtStart=30/100*BatteryDefault;
-  } else{
-    digitalWrite(5, LOW);
-    BatteryAtStart=(82*Voltage-580)/100*BatteryDefault;
-  }
-
   display.clearDisplay();
+  if(lowbat){
+    display.setCursor(0, 9);
+    display.setTextColor(SH110X_BLACK, SH110X_WHITE);
+    display.println("BATTERY LOW");
+  }
+  display.setTextColor(SH110X_WHITE, SH110X_BLACK);
   display.setCursor(0, 27);
   display.println("THROTTLE CHECK?");
+  display.setCursor(0, 36);
+  display.println("Flight mode ready...");
   display.setCursor(0, 54);
   display.print("BATTERY: ");
-  display.println(Voltage);
+  display.print(Voltage);
+  display.println("V");
   display.display();
 
   while(ReceiverValue[2] < 1020 || ReceiverValue[2] > 1050){
@@ -236,11 +258,18 @@ void setup(){
   }
 
   display.clearDisplay();
+  if(lowbat){
+    display.setCursor(0, 9);
+    display.setTextColor(SH110X_BLACK, SH110X_WHITE);
+    display.println("BATTERY LOW");
+  }
+  display.setTextColor(SH110X_WHITE, SH110X_BLACK);
   display.setCursor(0, 27);
   display.println("DISENGAGE DROP...");
   display.setCursor(0, 54);
   display.print("BATTERY: ");
-  display.println(Voltage);
+  display.print(Voltage);
+  display.println("V");
   display.display();
 
   read_receiver();
@@ -249,15 +278,27 @@ void setup(){
     read_receiver();
     delay(100);
   }
+  digitalWrite(13, LOW);
+
+  if(!lowbat){
+    digitalWrite(5, LOW);
+  }
 
   display.clearDisplay();
+  if(lowbat){
+    display.setCursor(0, 9);
+    display.setTextColor(SH110X_BLACK, SH110X_WHITE);
+    display.println("BATTERY LOW");
+  }
+  display.setTextColor(SH110X_WHITE, SH110X_BLACK);
   display.setCursor(0, 27);
   display.setTextColor(SH110X_BLACK, SH110X_WHITE);
-  display.println("Flight ready");
+  display.println("FLIGHT MODE");
   display.setCursor(0, 54);
   display.setTextColor(SH110X_WHITE, SH110X_BLACK);
   display.print("BATTERY: ");
-  display.println(Voltage);
+  display.print(Voltage);
+  display.println("V");
   display.display();
   
   LoopTimer = micros();
@@ -287,12 +328,16 @@ void loop() {
   DesiredAnglePitch = 0.10*(ReceiverValue[1]-1500);
 
   InputThrottle=ReceiverValue[2];
+  if(ch4comode){
+    DesiredRateYaw=0;
+  }
   if((ReceiverValue[3]>1200) && (ReceiverValue[3]<1300) && ch4comode && !comexc){
     Serial.println(" COMMAND EXECUTED ");
     comexc = true;
     // ACTIVATE COMMAND
     DesiredRateYaw=0;
-  } else{
+  }
+  if(ReceiverValue[3]>1490){
     DesiredRateYaw=0.15*((2*(ReceiverValue[3]-1500)+1000)-1500); // Normal yaw rate
   }
 
