@@ -1,12 +1,12 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
-#define i2c_Address 0x3c
 
 // DISPLAY
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define OLED_RESET -1   //   QT-PY / XIAO
+#define OLED_RESET -1    // QT-PY / XIAO
+#define i2c_Address 0x3c
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 bool lowbat = false;
@@ -33,10 +33,12 @@ float InputRoll, InputThrottle, InputPitch, InputYaw;
 float PrevErrorRateRoll, PrevErrorRatePitch, PrevErrorRateYaw;
 float PrevItermRateRoll, PrevItermRatePitch, PrevItermRateYaw;
 float PIDReturn[] = {0,0,0};
-float PRateRoll = 0.6; float PRatePitch = PRateRoll; float PRateYaw = 2;
 
+// CALIBRATE
+float PRateRoll = 0.6; float PRatePitch = PRateRoll; float PRateYaw = 2;
 float IRateRoll = 3.5; float IRatePitch = IRateRoll; float IRateYaw = 12;
 float DRateRoll = 0.03; float DRatePitch = DRateRoll; float DRateYaw = 0;
+
 float MotorInput1, MotorInput2, MotorInput3, MotorInput4;
 float AccX, AccY, AccZ;
 float AngleRoll, AnglePitch;
@@ -161,6 +163,7 @@ void setup(){
   display.display();
   delay(250);
   display.clearDisplay();
+  display.setRotation(2);
   display.setTextSize(1);
   display.setTextColor(SH110X_WHITE);
   display.setCursor(0, 27);
@@ -332,7 +335,7 @@ void loop() {
     DesiredRateYaw=0;
   }
   if((ReceiverValue[3]>1200) && (ReceiverValue[3]<1300) && ch4comode && !comexc){
-    Serial.println(" COMMAND EXECUTED ");
+    Serial.println("==================== COMMAND EXECUTED ====================");
     comexc = true;
     // ACTIVATE COMMAND
     DesiredRateYaw=0;
@@ -437,8 +440,8 @@ void loop() {
   Serial.print(" Motor 3: ");
   Serial.print(MotorInput3);
   Serial.print(" Motor 4: ");
-  Serial.print(MotorInput4);
-  Serial.print(" Desired YAW: ");
-  Serial.println(DesiredRateYaw);
+  Serial.println(MotorInput4);
+  /*Serial.print(" Desired YAW: ");
+  Serial.println(DesiredRateYaw);*/
 
 }
