@@ -5,7 +5,7 @@ int readChannel(int channelInput){
   int ch = pulseIn(channelInput, HIGH, 30000);
   return constrain(ch, 1000, 2000);
 }
-#define pin 1
+#define pin 3
 int motor = 0;
 
 void setup() {
@@ -31,4 +31,5 @@ void loop() {
     digitalWrite(13,LOW);
   }
   esc.writeMicroseconds(motor);
+  delay(25);
 }
