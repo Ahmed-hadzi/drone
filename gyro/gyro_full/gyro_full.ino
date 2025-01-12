@@ -97,10 +97,8 @@ void loop() {
   Serial.print(RatePitch);
   Serial.print(" | Yaw rate = ");
   Serial.print(RateYaw);*/
-  Serial.print("       |         Roll Angle = ");
-  Serial.print(AngleRoll);
-  Serial.print(" | Pitch Angle = ");
-  Serial.println(AnglePitch);
+  Serial.print("Roll Angle = ");
+  Serial.println(AngleRoll);
   delay(50);
 
 }

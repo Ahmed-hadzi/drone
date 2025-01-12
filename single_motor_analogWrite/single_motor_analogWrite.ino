@@ -2,7 +2,7 @@
  
 Servo ESC;     // create servo object to control the ESC
  
-const int pwmPin =  1;      // PWM pin
+const int pwmPin =  3;      // PWM pin
  
 #define MIN_PULSE_LENGTH 1000 // Minimum pulse length in Âµs
 #define MAX_PULSE_LENGTH 2000 // Maximum pulse length in Âµs
@@ -19,19 +19,23 @@ void setup() {
   ESC.attach(pwmPin, MIN_PULSE_LENGTH, MAX_PULSE_LENGTH);
  
   delay(5000);
+
+  Serial.println("Stopped");
+  ESC.writeMicroseconds(1000);
+  delay(2000);
  
   digitalWrite(13, HIGH);
   /*Serial.println("Calibratee: HIGH");
   ESC.writeMicroseconds(MAX_PULSE_LENGTH);
   delay(2000);*/
    Serial.println("Move HIGH");
-  ESC.writeMicroseconds(1800);
+  ESC.writeMicroseconds(1200);
  
   delay(5000);
  
   digitalWrite(13, LOW);
   Serial.println("Move LOW");
-  ESC.writeMicroseconds(1200);
+  ESC.writeMicroseconds(1500);
   /*delay(2000);
   Serial.println("Calibrate: LOW");
   ESC.writeMicroseconds(MIN_PULSE_LENGTH);*/
@@ -42,7 +46,7 @@ void setup() {
  
   digitalWrite(13, HIGH);
   Serial.println("Stop");
-  ESC.writeMicroseconds(1500);   
+  ESC.writeMicroseconds(1000);   
 }
  
 void loop() {

@@ -14,7 +14,20 @@ bool lowbat = false;
 bool ch4comode = false;
 bool comexc = false;
 
-int channelPins[4]={14,15,16,17}; // Channel pinout in order: {CH1, CH2, CH3, CH4}
+#define ch1input 14
+#define ch2input 15
+#define ch3input 16
+#define ch4input 17
+
+//Interrupts for non-blocking PWM reads
+volatile uint16_t ch1;
+volatile uint16_t ch2;
+volatile uint16_t ch3;
+volatile uint16_t ch4;
+uint16_t ch1_start;
+uint16_t ch2_start;
+uint16_t ch3_start;
+uint16_t ch4_start;
 
 float RateRoll, RatePitch, RateYaw;
 float RateCalibrationRoll, RateCalibrationPitch, RateCalibrationYaw;
@@ -57,8 +70,6 @@ float IAngleRoll = 0; float IAnglePitch = IAngleRoll;
 float DAngleRoll = 0; float DAnglePitch = DAngleRoll;
 
 
-int ch1val, ch2val, ch3val, ch4val;
-
 
 void kalman_1d(float KalmanState, float KalmanUncertainty, float KalmanInput, float KalmanMeasurement){
   KalmanState=KalmanState+0.004*KalmanInput;
@@ -73,17 +84,6 @@ void kalman_1d(float KalmanState, float KalmanUncertainty, float KalmanInput, fl
 void battery_voltage(void){
   Voltage=(float)analogRead(15)/33.325; // CUSTOM BATTERY DIVIDER
   Current=(float)analogRead(21)*0.089;
-}
-
-void read_receiver(void){
-  for(int i = 0; i<4; i++){
-    ReceiverValue[i] = readChannel(channelPins[i]);
-  }
-}
-
-int readChannel(int channelInput){
-  int ch = pulseIn(channelInput, HIGH, 30000);
-  return constrain(ch, 1000, 2000);
 }
 
 void gyro_signal(){
@@ -173,9 +173,16 @@ void setup(){
   display.display();
   delay(1000);
 
-  for(int i = 0; i<4; i++){
-    pinMode(channelPins[i], INPUT);
-  }
+  pinMode(ch1input, INPUT);
+  pinMode(ch2input, INPUT);
+  pinMode(ch3input, INPUT);
+  pinMode(ch4input, INPUT);
+
+  // Attaching interrupts for non-blocking PWM reads
+  attachInterrupt(ch1input, RCchannel1, CHANGE);
+  attachInterrupt(ch2input, RCchannel2, CHANGE);
+  attachInterrupt(ch3input, RCchannel3, CHANGE);
+  attachInterrupt(ch4input, RCchannel4, CHANGE);  
 
   pinMode(5, OUTPUT);
   digitalWrite(5, HIGH);
@@ -255,7 +262,7 @@ void setup(){
   display.display();
 
   while(ReceiverValue[2] < 1020 || ReceiverValue[2] > 1050){
-    read_receiver();
+    ReceiverValue[2] = constrain(pulseIn(16, HIGH, 30000), 1000, 2000);
     Serial.println(ReceiverValue[2]);
     delay(4);
   }
@@ -275,10 +282,10 @@ void setup(){
   display.println("V");
   display.display();
 
-  read_receiver();
+  ReceiverValue[3] = constrain(pulseIn(17, HIGH, 30000), 1000, 2000);
   while(ReceiverValue[3]<1400){
     digitalWrite(13, HIGH);
-    read_receiver();
+    ReceiverValue[3] = constrain(pulseIn(17, HIGH, 30000), 1000, 2000);
     delay(100);
   }
   digitalWrite(13, LOW);
@@ -325,10 +332,13 @@ void loop() {
   KalmanAnglePitch=Kalman1DOutput[0];
   KalmanUncertaintyAnglePitch=Kalman1DOutput[1];
 
-  read_receiver();
-
   DesiredAngleRoll=0.10*(ReceiverValue[0]-1500);
   DesiredAnglePitch = 0.10*(ReceiverValue[1]-1500);
+
+  ReceiverValue[0] = constrain(ch1, 1000, 2000);
+  ReceiverValue[1] = constrain(ch2, 1000, 2000);
+  ReceiverValue[2] = constrain(ch3, 1000, 2000);
+  ReceiverValue[3] = constrain(ch4, 1000, 2000);
 
   InputThrottle=ReceiverValue[2];
   if(ch4comode){
@@ -433,7 +443,17 @@ void loop() {
   LoopTimer=micros();
 
 
-  Serial.print(" Motor 1: ");
+  Serial.print("Channel 1: ");
+  Serial.print(ReceiverValue[0]);
+  Serial.print("      |      Channel 2: ");
+  Serial.print(ReceiverValue[1]);
+  Serial.print("      |      Channel 3: ");
+  Serial.print(ReceiverValue[2]);
+  Serial.print("      |      Channel 4:");
+  Serial.println(ReceiverValue[3]);
+
+
+  /*Serial.print(" Motor 1: ");
   Serial.print(MotorInput1);
   Serial.print(" Motor 2: ");
   Serial.print(MotorInput2);
@@ -441,7 +461,51 @@ void loop() {
   Serial.print(MotorInput3);
   Serial.print(" Motor 4: ");
   Serial.println(MotorInput4);
-  /*Serial.print(" Desired YAW: ");
+  Serial.print(" Desired YAW: ");
   Serial.println(DesiredRateYaw);*/
 
+}
+
+void RCchannel1() {
+// If the pin is HIGH, start a timer
+if (digitalRead(ch1input) == HIGH) {
+ch1_start = micros();
+} else {
+// The pin is now LOW so output the difference
+// between when the timer was started and now
+ch1 = (uint16_t) (micros() - ch1_start);
+}
+}
+
+void RCchannel2() {
+// If the pin is HIGH, start a timer
+if (digitalRead(ch2input) == HIGH) {
+ch2_start = micros();
+} else {
+// The pin is now LOW so output the difference
+// between when the timer was started and now
+ch2 = (uint16_t) (micros() - ch2_start);
+}
+}
+
+void RCchannel3() {
+// If the pin is HIGH, start a timer
+if (digitalRead(ch3input) == HIGH) {
+ch3_start = micros();
+} else {
+// The pin is now LOW so output the difference
+// between when the timer was started and now
+ch3 = (uint16_t) (micros() - ch3_start);
+}
+}
+
+void RCchannel4() {
+// If the pin is HIGH, start a timer
+if (digitalRead(ch4input) == HIGH) {
+ch4_start = micros();
+} else {
+// The pin is now LOW so output the difference
+// between when the timer was started and now
+ch4 = (uint16_t) (micros() - ch4_start);
+}
 }
