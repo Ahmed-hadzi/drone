@@ -15,6 +15,10 @@ bool lowbat = false;
 bool ch4comode = false;
 bool comexc = false;
 
+bool armed = false;
+int armCounter = 0;
+int displayCounter = 500;
+
 #define ch1input 14
 #define ch2input 16
 #define ch3input 17
@@ -58,9 +62,9 @@ float PrevItermRateRoll, PrevItermRatePitch, PrevItermRateYaw;
 float PIDReturn[] = {0,0,0};
 
 // CALIBRATE
-float PRateRoll = 0.6; float PRatePitch = PRateRoll; float PRateYaw = 2;
-float IRateRoll = 3.5; float IRatePitch = IRateRoll; float IRateYaw = 12;
-float DRateRoll = 0.03; float DRatePitch = DRateRoll; float DRateYaw = 0;
+float PRateRoll = 0.6; float PRatePitch = PRateRoll; float PRateYaw = 2; // 0.6
+float IRateRoll = 3.5; float IRatePitch = IRateRoll; float IRateYaw = 12; // 3.5
+float DRateRoll = 0.03; float DRatePitch = DRateRoll; float DRateYaw = 0; // 0.03
 
 float MotorInput1, MotorInput2, MotorInput3, MotorInput4;
 float AccX, AccY, AccZ;
@@ -295,7 +299,7 @@ void setup(){
   display.println("V");
   display.display();
 
-  while(ReceiverValue[2] < 1020 || ReceiverValue[2] > 1050){
+  while(ReceiverValue[2] < 1450 || ReceiverValue[2] > 1550){
     ReceiverValue[2] = constrain(pulseIn(ch3input, HIGH, 30000), 1000, 2000);
     Serial.println(ReceiverValue[2]);
     delay(4);
@@ -470,10 +474,52 @@ void loop() {
     reset_pid();
   }
 
-  analogWrite(1, MotorInput1);
-  analogWrite(2, MotorInput2);
-  analogWrite(3, MotorInput3);
-  analogWrite(4, MotorInput4);
+  if(!armed){
+    //Avoiding display slowdown
+    if(displayCounter>=500){
+    display.clearDisplay();
+    display.setTextColor(SH110X_BLACK, SH110X_WHITE);
+    display.setCursor(0, 27);
+    display.println("DISARMED");
+    display.setCursor(0, 54);
+    display.setTextColor(SH110X_WHITE, SH110X_BLACK);
+    display.print("BATTERY: ");
+    display.print(BatteryRemaining);
+    display.println("%");
+    display.display();
+    Serial.println("display");
+    displayCounter=0;
+    }
+    displayCounter++;
+    if((InputThrottle<1050) && (DesiredRateYaw > 47)){
+      armCounter++;
+    } else{
+      armCounter=0;
+    }
+    if(armCounter>200){
+      armed=true;
+      display.clearDisplay();
+      display.display();
+      displayCounter=500;
+      armCounter=0;
+    }
+  }
+  
+  if(armed){
+    analogWrite(1, MotorInput1);
+    analogWrite(2, MotorInput2);
+    analogWrite(3, MotorInput3);
+    analogWrite(4, MotorInput4);
+    if((InputThrottle<1050) && (DesiredRateYaw < -47)){
+      armCounter++;
+    } else{
+      armCounter=0;
+    }
+    if(armCounter>200){
+      armed=false;
+      armCounter=0;
+    }
+  }
   moveCamera();
 
   battery_voltage();
@@ -482,13 +528,13 @@ void loop() {
   if(BatteryRemaining<=30) digitalWrite(5, HIGH);
   else digitalWrite(5, LOW);
 
-  display.clearDisplay();
+  /*display.clearDisplay();
   display.setCursor(0, 54);
   display.setTextColor(SH110X_WHITE, SH110X_BLACK);
   display.print("BATTERY: ");
   display.print(BatteryRemaining);
   display.println("%");
-  display.display();
+  display.display();*/
 
   while(micros() - LoopTimer < 4000);
   LoopTimer=micros();
@@ -505,7 +551,7 @@ void loop() {
   Serial.print("      |      Channel 5:");
   Serial.println(ch5);*/
 
-  Serial.print("Roll: ");
+  /*Serial.print("Roll: ");
   Serial.print(DesiredAngleRoll);
   Serial.print("      |      Pitch: ");
   Serial.print(DesiredAnglePitch);
@@ -516,18 +562,16 @@ void loop() {
   Serial.print("      |      Cam:");
   Serial.print(ch5);
   Serial.print("      |      Bat:");
-  Serial.println(BatteryRemaining);
+  Serial.println(BatteryRemaining);*/
 
-  /*Serial.print(" Motor 1: ");
+  /*Serial.print("Motor_1:");
   Serial.print(MotorInput1);
-  Serial.print(" Motor 2: ");
+  Serial.print(" Motor_2:");
   Serial.print(MotorInput2);
-  Serial.print(" Motor 3: ");
+  Serial.print(" Motor_3:");
   Serial.print(MotorInput3);
-  Serial.print(" Motor 4: ");
-  Serial.println(MotorInput4);
-  Serial.print(" Desired YAW: ");
-  Serial.println(DesiredRateYaw);*/
+  Serial.print(" Motor_4:");
+  Serial.println(MotorInput4);*/
 
 }
 
