@@ -14,6 +14,10 @@
 #define i2c_Address 0x3c
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+int serial_counter = 0;
+
+IntervalTimer telemetry_timer;
+
 // OSD
 #define mspSerial Serial4
 MSP msp;
@@ -21,11 +25,11 @@ uint32_t previousMillis_MSP = 0;
 const uint32_t next_interval_MSP = 100;
 
 // OSD VALUES
-uint8_t osd_vbat = 85;
+uint8_t osd_vbat = 0;
 uint16_t osd_rssi = 0;
 char craftname[15] = "CALIBRATING";
-int16_t osd_amperage = 23;
-uint16_t osd_mAhDrawn = 40;
+int16_t osd_amperage = 0;
+uint16_t osd_mAhDrawn = 0;
 uint32_t general_counter = 0;
 
 
@@ -308,6 +312,11 @@ void send_osd_config()
     msp.send(MSP_OSD_CONFIG, &msp_osd_config, sizeof(msp_osd_config));
 }
 
+void send_telem_osd(){
+  send_msp_to_airunit();
+  TelemetryBattery(Voltage, Current, BatteryDefault, BatteryRemaining);
+}
+
 void setup(){
   Serial.begin(115200);
 
@@ -316,8 +325,9 @@ void setup(){
 
   mspSerial.begin(115200);
   msp.begin(mspSerial);
-  strcpy(craftname, "CAL");
-  send_msp_to_airunit();
+  strcpy(craftname, "CALIBRATING");
+
+  telemetry_timer.begin(send_telem_osd, 100000);
 
   // DISPLAY SETUP
   display.begin(i2c_Address, true);
@@ -366,8 +376,6 @@ void setup(){
   }
   TelemetryBattery(Voltage, 0, BatteryDefault, BatteryAtStart);
   osd_vbat = Voltage*10;
-  strcpy(craftname, "CAL");
-  send_msp_to_airunit();
   
 
   display.clearDisplay();
@@ -422,14 +430,12 @@ void setup(){
   display.println("V");
   display.display();
 
-  
+  strcpy(craftname, "THROTTLE");
   crsf.update();
   int throttlecheck = crsf.getChannel(3);
   while(throttlecheck < 1450 || throttlecheck > 1550){
     crsf.update();
     throttlecheck = crsf.getChannel(3);
-    strcpy(craftname, "THR");
-    send_msp_to_airunit();
     Serial.println(throttlecheck);
     delay(4);
   }
@@ -449,6 +455,7 @@ void setup(){
   display.println("V");
   display.display();
 
+  strcpy(craftname, "DROP MODE");
   crsf.update();
   int dropcheck = crsf.getChannel(5);
   while(dropcheck<1400){
@@ -481,7 +488,6 @@ void setup(){
   display.display();
 
   strcpy(craftname, "FLIGHT");
-  send_msp_to_airunit();
   
   LoopTimer = micros();
 
@@ -765,19 +771,10 @@ void loop() {
     digitalWrite(5, LOW);
     lowbat = false;
   }
-  TelemetryBattery(Voltage, Current, BatteryDefault, BatteryRemaining);
 
   osd_vbat = Voltage*10;
   osd_mAhDrawn = CurrentConsumed;
   osd_amperage = BatteryRemaining*100;
-  send_msp_to_airunit();
-
-  uint32_t currentMillis_MSP = millis();
-    if ((uint32_t)(currentMillis_MSP - previousMillis_MSP) >= next_interval_MSP) {
-        previousMillis_MSP = currentMillis_MSP;
-        send_msp_to_airunit();
-        general_counter += next_interval_MSP;
-    }
 
   /*display.clearDisplay();
   display.setCursor(0, 54);
@@ -799,18 +796,21 @@ void loop() {
   Serial.print(" Motor_4:");
   Serial.println(MotorInput4);*/
 
-  Serial.print("X: ");
+  /*Serial.print("X: ");
   Serial.print(AccX);
   Serial.print(" | Y: ");
   Serial.print(AccY);
   Serial.print(" | Z: ");
-  Serial.println(AccZ);
+  Serial.println(AccZ);*/
 
   /*Serial.print("Roll:");
   Serial.print(ReceiverValue[0]);
   Serial.print(" | Pitch:");
   Serial.println(ReceiverValue[1]);*/
   //printChannels();
+
+  Serial.println(serial_counter);
+  serial_counter++;
 }
 
 void printChannels()

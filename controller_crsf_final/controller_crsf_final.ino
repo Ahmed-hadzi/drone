@@ -11,6 +11,8 @@
 #define i2c_Address 0x3c
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+int serial_counter = 0;
+
 // If battery <30%
 bool lowbat = false;
 
@@ -651,18 +653,21 @@ void loop() {
   Serial.print(" Motor_4:");
   Serial.println(MotorInput4);*/
 
-  Serial.print("X: ");
+  /*Serial.print("X: ");
   Serial.print(AccX);
   Serial.print(" | Y: ");
   Serial.print(AccY);
   Serial.print(" | Z: ");
-  Serial.println(AccZ);
+  Serial.println(AccZ);*/
 
   /*Serial.print("Roll:");
   Serial.print(ReceiverValue[0]);
   Serial.print(" | Pitch:");
   Serial.println(ReceiverValue[1]);*/
   //printChannels();
+
+  Serial.println(serial_counter);
+  serial_counter++;
 }
 
 void printChannels()
