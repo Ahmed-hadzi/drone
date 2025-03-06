@@ -49,9 +49,9 @@ void gyro_signals(void){
   RatePitch = (float)GyroY/65.5;
   RateYaw = (float)GyroZ/65.5;
 
-  AccX = (float)AccXLSB/4096-0.04; // CALIBRATION X
-  AccY = (float)AccYLSB/4096+0.02; // CALIBRATION Y
-  AccZ = (float)AccZLSB/4096+0.07; // CALIBRATION Z
+  AccX = (float)AccXLSB/4096-0.11; // CALIBRATION X
+  AccY = (float)AccYLSB/4096; // CALIBRATION Y
+  AccZ = (float)AccZLSB/4096-0.19; // CALIBRATION Z
 
   AngleRoll=atan(AccY/sqrt(AccX*AccX+AccZ*AccZ))*1/(3.14159/180);
   AnglePitch=-atan(AccX/sqrt(AccY*AccY+AccZ*AccZ))*1/(3.14159/180);
@@ -95,10 +95,19 @@ void loop() {
   Serial.print(RateRoll);
   Serial.print(" | Pitch rate = ");
   Serial.print(RatePitch);*/
-  Serial.print(" | Yaw rate = ");
+  /*Serial.print(" | Yaw rate = ");
   Serial.print(RateYaw);
   Serial.print("Roll Angle = ");
-  Serial.println(AngleRoll);
+  Serial.println(AngleRoll);*/
+
+  Serial.print("X: ");
+  Serial.print(AccX);
+  Serial.print(" | Y: ");
+  Serial.print(AccY);
+  Serial.print(" | Z: ");
+  Serial.println(AccZ);
+  
+  
   delay(50);
 
 }
