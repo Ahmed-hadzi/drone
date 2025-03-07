@@ -16,6 +16,8 @@ int serial_counter = 0;
 // If battery <30%
 bool lowbat = false;
 
+int looptime = 0;
+
 // Arming-disarming variables
 bool armed = false;
 int armCounter = 0;
@@ -361,6 +363,7 @@ void setup(){
 }
 
 void loop() {
+  looptime=micros();
   gyro_signal();
   RateRoll-=RateCalibrationRoll;
   RatePitch-=RateCalibrationPitch;
@@ -633,41 +636,10 @@ void loop() {
   }
   TelemetryBattery(Voltage, Current, BatteryDefault, BatteryRemaining);
 
-  /*display.clearDisplay();
-  display.setCursor(0, 54);
-  display.setTextColor(SH110X_WHITE, SH110X_BLACK);
-  display.print("BATTERY: ");
-  display.print(BatteryRemaining);
-  display.println("%");
-  display.display();*/
-
   while(micros() - LoopTimer < 4000);
   LoopTimer=micros();
 
-  /*Serial.print("Motor_1:");
-  Serial.print(MotorInput1);
-  Serial.print(" Motor_2:");
-  Serial.print(MotorInput2);
-  Serial.print(" Motor_3:");
-  Serial.print(MotorInput3);
-  Serial.print(" Motor_4:");
-  Serial.println(MotorInput4);*/
-
-  /*Serial.print("X: ");
-  Serial.print(AccX);
-  Serial.print(" | Y: ");
-  Serial.print(AccY);
-  Serial.print(" | Z: ");
-  Serial.println(AccZ);*/
-
-  /*Serial.print("Roll:");
-  Serial.print(ReceiverValue[0]);
-  Serial.print(" | Pitch:");
-  Serial.println(ReceiverValue[1]);*/
-  //printChannels();
-
-  Serial.println(serial_counter);
-  serial_counter++;
+  Serial.println(micros()-looptime);
 }
 
 void printChannels()

@@ -6,6 +6,7 @@
 #include <MSP.h> //OSD
 #include "MSP_OSD.h" //OSD config
 #include "OSD_positions_config.h" //OSD display positions
+#include <TeensyThreads.h> //Threading
 
 // DISPLAY
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -14,9 +15,7 @@
 #define i2c_Address 0x3c
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-int serial_counter = 0;
-
-IntervalTimer telemetry_timer;
+int looptime = 0;
 
 // OSD
 #define mspSerial Serial4
@@ -114,7 +113,7 @@ void kalman_1d(float KalmanState, float KalmanUncertainty, float KalmanInput, fl
 
 void battery_voltage(void){
   Voltage=(float)analogRead(15)/63.33;
-  Current=(float)analogRead(21)*0.4;
+  Current=(float)analogRead(21)*0.3;
 }
 
 void gyro_signal(){
@@ -313,8 +312,11 @@ void send_osd_config()
 }
 
 void send_telem_osd(){
-  send_msp_to_airunit();
-  TelemetryBattery(Voltage, Current, BatteryDefault, BatteryRemaining);
+  while(1){
+    send_msp_to_airunit();
+    TelemetryBattery(Voltage, Current, BatteryDefault, BatteryRemaining);
+    threads.yield();
+  }
 }
 
 void setup(){
@@ -327,7 +329,7 @@ void setup(){
   msp.begin(mspSerial);
   strcpy(craftname, "CALIBRATING");
 
-  telemetry_timer.begin(send_telem_osd, 100000);
+  threads.addThread(send_telem_osd);
 
   // DISPLAY SETUP
   display.begin(i2c_Address, true);
@@ -498,6 +500,7 @@ void setup(){
 }
 
 void loop() {
+  looptime=micros();
   gyro_signal();
   RateRoll-=RateCalibrationRoll;
   RatePitch-=RateCalibrationPitch;
@@ -628,6 +631,7 @@ void loop() {
       display.display();
       displayCounter=500;
       armCounter=0;
+      strcpy(craftname, "ARMED");
     }
 
     if((ReceiverValue[2]>1990) && (DesiredRateYaw < -47) && (!esc_calibrated) && (!esc_calibrating)){
@@ -743,11 +747,11 @@ void loop() {
   
   // DRONE IS ARMED
   if(armed){
-    strcpy(craftname, "ARMED");
     analogWrite(1, MotorInput1);
     analogWrite(2, MotorInput2);
     analogWrite(3, MotorInput3);
     analogWrite(4, MotorInput4);
+    
     if((ReceiverValue[2]<1050) && (DesiredRateYaw < -47)){
       armCounter++;
     } else{
@@ -758,6 +762,7 @@ void loop() {
       armCounter=0;
     }
   }
+  
   moveCamera();
 
   battery_voltage();
@@ -771,46 +776,15 @@ void loop() {
     digitalWrite(5, LOW);
     lowbat = false;
   }
-
   osd_vbat = Voltage*10;
   osd_mAhDrawn = CurrentConsumed;
   osd_amperage = BatteryRemaining*100;
 
-  /*display.clearDisplay();
-  display.setCursor(0, 54);
-  display.setTextColor(SH110X_WHITE, SH110X_BLACK);
-  display.print("BATTERY: ");
-  display.print(BatteryRemaining);
-  display.println("%");
-  display.display();*/
-
   while(micros() - LoopTimer < 4000);
   LoopTimer=micros();
 
-  /*Serial.print("Motor_1:");
-  Serial.print(MotorInput1);
-  Serial.print(" Motor_2:");
-  Serial.print(MotorInput2);
-  Serial.print(" Motor_3:");
-  Serial.print(MotorInput3);
-  Serial.print(" Motor_4:");
-  Serial.println(MotorInput4);*/
+  Serial.println(micros()-looptime);
 
-  /*Serial.print("X: ");
-  Serial.print(AccX);
-  Serial.print(" | Y: ");
-  Serial.print(AccY);
-  Serial.print(" | Z: ");
-  Serial.println(AccZ);*/
-
-  /*Serial.print("Roll:");
-  Serial.print(ReceiverValue[0]);
-  Serial.print(" | Pitch:");
-  Serial.println(ReceiverValue[1]);*/
-  //printChannels();
-
-  Serial.println(serial_counter);
-  serial_counter++;
 }
 
 void printChannels()
