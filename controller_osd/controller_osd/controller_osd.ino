@@ -80,7 +80,7 @@ float PIDReturn[] = {0,0,0};
 // CALIBRATE
 float PRateRoll = 0.6; float PRatePitch = PRateRoll; float PRateYaw = 2; // 0.6
 float IRateRoll = 3.55; float IRatePitch = IRateRoll; float IRateYaw = 13; // 3.5
-float DRateRoll = 0.03; float DRatePitch = DRateRoll; float DRateYaw = 0; // 0.03
+float DRateRoll = 0.04; float DRatePitch = DRateRoll; float DRateYaw = 0; // 0.03
 
 float MotorInput1, MotorInput2, MotorInput3, MotorInput4;
 float AccX, AccY, AccZ;
