@@ -6,7 +6,6 @@
 #include <MSP.h> //OSD
 #include "MSP_OSD.h" //OSD config
 #include "OSD_positions_config.h" //OSD display positions
-#include <TeensyThreads.h> //Threading
 
 // DISPLAY
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -31,6 +30,7 @@ int16_t osd_amperage = 0;
 uint16_t osd_mAhDrawn = 0;
 uint32_t general_counter = 0;
 
+int osd_counter = 0;
 
 // If battery <30%
 bool lowbat = false;
@@ -50,6 +50,9 @@ AlfredoCRSF crsf;
 
 // Camera movement system
 #define camPin 12
+bool camStabilizationMode = false;
+int stabilizedCamAngleGyro = 0;
+int stabilizedCamAngleCalib = 0;
 int desiredCamAngle = 0;
 int actualCamAngle=0;
 Servo camServo;
@@ -78,9 +81,9 @@ float PrevItermRateRoll, PrevItermRatePitch, PrevItermRateYaw;
 float PIDReturn[] = {0,0,0};
 
 // CALIBRATE
-float PRateRoll = 0.6; float PRatePitch = PRateRoll; float PRateYaw = 2; // 0.6
-float IRateRoll = 3.55; float IRatePitch = IRateRoll; float IRateYaw = 13; // 3.5
-float DRateRoll = 0.04; float DRatePitch = DRateRoll; float DRateYaw = 0; // 0.03
+float PRateRoll = 0.61; float PRatePitch = 0.64; float PRateYaw = 2; // 0.6
+float IRateRoll = 3.55; float IRatePitch = 3.58; float IRateYaw = 13; // 3.5
+float DRateRoll = 0.04; float DRatePitch = 0.05; float DRateYaw = 0; // 0.03
 
 float MotorInput1, MotorInput2, MotorInput3, MotorInput4;
 float AccX, AccY, AccZ;
@@ -184,20 +187,19 @@ void reset_pid(){
   PrevItermAngleRoll=0; PrevItermAnglePitch=0;
 }
 
-void moveCamera(){
-  desiredCamAngle = constrain(crsf.getChannel(6), 1000, 2000);
+void moveCamera(int desiredCameraAngle){
 
-  if(abs(desiredCamAngle-actualCamAngle)<20){
+  if(abs(desiredCameraAngle-actualCamAngle)<20){
     return;
   } else{
-  actualCamAngle = desiredCamAngle;
-  if(desiredCamAngle < 950){ // NO SIGNAL
-    desiredCamAngle = 1500;
+  actualCamAngle = desiredCameraAngle;
+  if(desiredCameraAngle < 950){ // NO SIGNAL
+    desiredCameraAngle = 1500;
   } else
-  if(desiredCamAngle >= 950){ // Normal signal
-    desiredCamAngle=map(desiredCamAngle, 1000, 2000, 1000, 2000);
+  if(desiredCameraAngle >= 950){ // Normal signal
+    desiredCameraAngle=map(desiredCameraAngle, 1000, 2000, 1000, 2000);
   }
-  camServo.writeMicroseconds(desiredCamAngle);
+  camServo.writeMicroseconds(desiredCameraAngle);
   }
 }
 
@@ -311,14 +313,6 @@ void send_osd_config()
     msp.send(MSP_OSD_CONFIG, &msp_osd_config, sizeof(msp_osd_config));
 }
 
-void send_telem_osd(){
-  while(1){
-    send_msp_to_airunit();
-    TelemetryBattery(Voltage, Current, BatteryDefault, BatteryRemaining);
-    threads.yield();
-  }
-}
-
 void setup(){
   Serial.begin(115200);
 
@@ -328,8 +322,6 @@ void setup(){
   mspSerial.begin(115200);
   msp.begin(mspSerial);
   strcpy(craftname, "CALIBRATING");
-
-  threads.addThread(send_telem_osd);
 
   // DISPLAY SETUP
   display.begin(i2c_Address, true);
@@ -500,6 +492,13 @@ void setup(){
 }
 
 void loop() {
+  if(osd_counter == 250){
+    send_msp_to_airunit();
+    TelemetryBattery(Voltage, Current, BatteryDefault, BatteryRemaining);
+    osd_counter=0;
+    return;
+  }
+  osd_counter++;
   looptime=micros();
   gyro_signal();
   RateRoll-=RateCalibrationRoll;
@@ -530,6 +529,12 @@ void loop() {
   ReceiverValue[1] = constrain(crsf.getChannel(2), 1000, 2000) + TrimPitch;
   ReceiverValue[2] = constrain(crsf.getChannel(3), 1000, 2000);
   ReceiverValue[3] = constrain(crsf.getChannel(4), 1000, 2000);
+  
+  if(crsf.getChannel(8)>1900){
+    camStabilizationMode = true;
+  } else{
+    camStabilizationMode = false;
+  }
   
   InputThrottle=ReceiverValue[2];
   DesiredRateYaw=0.15*(ReceiverValue[3]-1500);
@@ -763,7 +768,17 @@ void loop() {
     }
   }
   
-  moveCamera();
+  if(camStabilizationMode){
+    stabilizedCamAngleGyro = 1000 + (45-KalmanAnglePitch)*10;
+    if((stabilizedCamAngleGyro < 1550) && (stabilizedCamAngleGyro > 1450)){
+      stabilizedCamAngleGyro = 1500;
+    }
+    stabilizedCamAngleCalib = crsf.getChannel(6);
+    moveCamera(constrain(stabilizedCamAngleCalib+(stabilizedCamAngleGyro-1500), 1000, 2000));
+  }
+  if(!camStabilizationMode){
+    moveCamera(constrain(crsf.getChannel(6), 1000, 2000));
+  }
 
   battery_voltage();
   CurrentConsumed=Current*1000*0.004/3600+CurrentConsumed;
@@ -783,7 +798,8 @@ void loop() {
   while(micros() - LoopTimer < 4000);
   LoopTimer=micros();
 
-  Serial.println(micros()-looptime);
+  //Serial.println(micros()-looptime);
+  Serial.println(KalmanAnglePitch);
 
 }
 
