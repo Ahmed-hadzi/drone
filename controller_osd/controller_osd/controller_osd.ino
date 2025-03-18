@@ -53,7 +53,6 @@ AlfredoCRSF crsf;
 bool camStabilizationMode = false;
 int stabilizedCamAngleGyro = 0;
 int stabilizedCamAngleCalib = 0;
-int desiredCamAngle = 0;
 int actualCamAngle=0;
 Servo camServo;
 
@@ -189,7 +188,7 @@ void reset_pid(){
 
 void moveCamera(int desiredCameraAngle){
 
-  if(abs(desiredCameraAngle-actualCamAngle)<20){
+  if(abs(desiredCameraAngle-actualCamAngle)<10){
     return;
   } else{
   actualCamAngle = desiredCameraAngle;
@@ -499,8 +498,11 @@ void loop() {
     return;
   }
   osd_counter++;
+  
   looptime=micros();
+  
   gyro_signal();
+  
   RateRoll-=RateCalibrationRoll;
   RatePitch-=RateCalibrationPitch;
   RateYaw-=RateCalibrationYaw;
@@ -515,11 +517,11 @@ void loop() {
   DesiredAngleRoll=0.10*(ReceiverValue[0]-1500);
   DesiredAnglePitch = 0.10*(ReceiverValue[1]-1500);
 
-  if((DesiredAngleRoll<1) && (DesiredAngleRoll>-1)){
+  if((DesiredAngleRoll<0.5) && (DesiredAngleRoll>-0.5)){
     DesiredAngleRoll=0;
   }
 
-  if((DesiredAnglePitch<1) && (DesiredAnglePitch>-1)){
+  if((DesiredAnglePitch<0.5) && (DesiredAnglePitch>-0.5)){
     DesiredAnglePitch=0;
   }
 
@@ -770,9 +772,6 @@ void loop() {
   
   if(camStabilizationMode){
     stabilizedCamAngleGyro = 1000 + (45-KalmanAnglePitch)*10;
-    if((stabilizedCamAngleGyro < 1550) && (stabilizedCamAngleGyro > 1450)){
-      stabilizedCamAngleGyro = 1500;
-    }
     stabilizedCamAngleCalib = crsf.getChannel(6);
     moveCamera(constrain(stabilizedCamAngleCalib+(stabilizedCamAngleGyro-1500), 1000, 2000));
   }
