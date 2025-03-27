@@ -187,17 +187,15 @@ void reset_pid(){
 }
 
 void moveCamera(int desiredCameraAngle){
-
+  if(desiredCameraAngle < 950){ // NO SIGNAL
+    actualCamAngle = 1500;
+    camServo.writeMicroseconds(1500);
+    return;
+  }
   if(abs(desiredCameraAngle-actualCamAngle)<10){
     return;
   } else{
   actualCamAngle = desiredCameraAngle;
-  if(desiredCameraAngle < 950){ // NO SIGNAL
-    desiredCameraAngle = 1500;
-  } else
-  if(desiredCameraAngle >= 950){ // Normal signal
-    desiredCameraAngle=map(desiredCameraAngle, 1000, 2000, 1000, 2000);
-  }
   camServo.writeMicroseconds(desiredCameraAngle);
   }
 }
@@ -798,7 +796,8 @@ void loop() {
   LoopTimer=micros();
 
   //Serial.println(micros()-looptime);
-  Serial.println(KalmanAnglePitch);
+  //Serial.println(KalmanAnglePitch);
+  printChannels();
 
 }
 
