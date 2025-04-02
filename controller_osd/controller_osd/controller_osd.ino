@@ -188,18 +188,27 @@ void reset_pid(){
 
 void moveCamera(int desiredCameraAngle){
   //Serial.println(desiredCameraAngle);
-  camServo.writeMicroseconds(desiredCameraAngle);
-  /*if(desiredCameraAngle < 490){ // NO SIGNAL
-    actualCamAngle = 1500;
-    camServo.writeMicroseconds(1500);
+  //camServo.writeMicroseconds(desiredCameraAngle);
+  if(desiredCameraAngle < 490){ // NO SIGNAL
+    actualCamAngle = 1000;
+    camServo.writeMicroseconds(1000);
     return;
   }
-  if(abs(desiredCameraAngle-actualCamAngle)<10){
+
+  if(actualCamAngle == desiredCameraAngle){
     return;
-  } else{
-  actualCamAngle = desiredCameraAngle;
-  camServo.writeMicroseconds(desiredCameraAngle);
-  }*/
+  }
+
+  if(actualCamAngle > desiredCameraAngle){
+    actualCamAngle-=2;
+    camServo.writeMicroseconds(actualCamAngle);
+  }
+
+  if(actualCamAngle < desiredCameraAngle){
+    actualCamAngle+=2;
+    camServo.writeMicroseconds(actualCamAngle);
+  }
+  
 }
 
 static void TelemetryBattery(float voltage, float current, float capacity, float remaining)
@@ -779,6 +788,8 @@ void loop() {
     moveCamera(constrain((1.24*crsf.getChannel(6))-680, 500, 1800));
   }
 
+  Serial.println((1.24*crsf.getChannel(6))-680);
+
   battery_voltage();
   CurrentConsumed=Current*1000*0.004/3600+CurrentConsumed;
   BatteryRemaining=(BatteryAtStart-CurrentConsumed)/BatteryDefault*100;
@@ -798,7 +809,7 @@ void loop() {
   LoopTimer=micros();
 
   //Serial.println(KalmanAnglePitch);
-  printChannels();
+  //printChannels();
 
 }
 
