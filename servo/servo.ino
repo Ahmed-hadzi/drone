@@ -7,6 +7,8 @@ void setup() {
   // put your setup code here, to run once:
   pinMode(12, OUTPUT);
   camservo.attach(campin, 500, 2500);
+  camservo.writeMicroseconds(500);
+  delay(1000);
 
 }
 
