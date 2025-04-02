@@ -187,7 +187,9 @@ void reset_pid(){
 }
 
 void moveCamera(int desiredCameraAngle){
-  if(desiredCameraAngle < 950){ // NO SIGNAL
+  //Serial.println(desiredCameraAngle);
+  camServo.writeMicroseconds(desiredCameraAngle);
+  /*if(desiredCameraAngle < 490){ // NO SIGNAL
     actualCamAngle = 1500;
     camServo.writeMicroseconds(1500);
     return;
@@ -197,7 +199,7 @@ void moveCamera(int desiredCameraAngle){
   } else{
   actualCamAngle = desiredCameraAngle;
   camServo.writeMicroseconds(desiredCameraAngle);
-  }
+  }*/
 }
 
 static void TelemetryBattery(float voltage, float current, float capacity, float remaining)
@@ -338,7 +340,7 @@ void setup(){
   pinMode(15, INPUT);
   pinMode(21, INPUT);
 
-  camServo.attach(camPin, 1000, 2000);
+  camServo.attach(camPin, 500, 2500);
 
   pinMode(camPin, OUTPUT);
   pinMode(5, OUTPUT);
@@ -771,10 +773,10 @@ void loop() {
   if(camStabilizationMode){
     stabilizedCamAngleGyro = 1000 + (45-KalmanAnglePitch)*10;
     stabilizedCamAngleCalib = crsf.getChannel(6);
-    moveCamera(constrain(stabilizedCamAngleCalib+(stabilizedCamAngleGyro-1500), 1000, 2000));
+    moveCamera(constrain(1.24*(stabilizedCamAngleCalib+(stabilizedCamAngleGyro-1500))-680, 500, 1800));
   }
   if(!camStabilizationMode){
-    moveCamera(constrain(crsf.getChannel(6), 1000, 2000));
+    moveCamera(constrain((1.24*crsf.getChannel(6))-680, 500, 1800));
   }
 
   battery_voltage();
@@ -795,7 +797,6 @@ void loop() {
   while(micros() - LoopTimer < 4000);
   LoopTimer=micros();
 
-  //Serial.println(micros()-looptime);
   //Serial.println(KalmanAnglePitch);
   printChannels();
 
