@@ -24,11 +24,13 @@ const uint32_t next_interval_MSP = 100;
 
 // OSD VALUES
 uint8_t osd_vbat = 0;
-uint16_t osd_rssi = 0;
+uint16_t osd_rssi = 1250; // 1 - 1250
 char craftname[15] = "CALIBRATING";
 int16_t osd_amperage = 0;
 uint16_t osd_mAhDrawn = 0;
 uint32_t general_counter = 0;
+
+msp_attitude_t attitude = { 0 };
 
 int osd_counter = 0;
 
@@ -243,8 +245,12 @@ void send_msp_to_airunit()
 
     battery_state.mAhDrawn = osd_mAhDrawn;
     msp.send(MSP_BATTERY_STATE, &battery_state, sizeof(battery_state));
+}
 
-    send_osd_config();
+void send_gyro_to_airunit(int osd_pitch, int osd_roll){
+    attitude.pitch = osd_pitch * 10;
+    attitude.roll = osd_roll * 10;
+    msp.send(MSP_ATTITUDE, &attitude, sizeof(attitude));
 }
 
 msp_osd_config_t msp_osd_config = {0};
@@ -329,6 +335,7 @@ void setup(){
 
   mspSerial.begin(115200);
   msp.begin(mspSerial);
+  send_osd_config();
   strcpy(craftname, "CALIBRATING");
 
   // DISPLAY SETUP
@@ -432,6 +439,7 @@ void setup(){
   display.println("V");
   display.display();
 
+  send_osd_config();
   strcpy(craftname, "THROTTLE");
   crsf.update();
   int throttlecheck = crsf.getChannel(3);
@@ -457,6 +465,7 @@ void setup(){
   display.println("V");
   display.display();
 
+  send_osd_config();
   strcpy(craftname, "DROP MODE");
   crsf.update();
   int dropcheck = crsf.getChannel(5);
@@ -489,6 +498,7 @@ void setup(){
   display.println("V");
   display.display();
 
+  send_osd_config();
   strcpy(craftname, "FLIGHT");
   
   LoopTimer = micros();
@@ -496,6 +506,7 @@ void setup(){
   delay(1000);
   display.clearDisplay();
   display.display();
+  send_osd_config();
 
 }
 
@@ -534,7 +545,11 @@ void loop() {
     DesiredAnglePitch=0;
   }
 
+  send_gyro_to_airunit(KalmanAnglePitch, KalmanAngleRoll);
+
   crsf.update();
+
+  osd_rssi = (crsf.getChannel(10)-1000)*1.24+10;
 
   ReceiverValue[0] = constrain(crsf.getChannel(1), 1000, 2000) + TrimRoll;
   ReceiverValue[1] = constrain(crsf.getChannel(2), 1000, 2000) + TrimPitch;
@@ -545,6 +560,10 @@ void loop() {
     camStabilizationMode = true;
   } else{
     camStabilizationMode = false;
+  }
+
+  if(crsf.getChannel(9)>1900){
+    send_osd_config();
   }
   
   InputThrottle=ReceiverValue[2];
@@ -809,7 +828,7 @@ void loop() {
   LoopTimer=micros();
 
   //Serial.println(KalmanAnglePitch);
-  //printChannels();
+  printChannels();
 
 }
 
