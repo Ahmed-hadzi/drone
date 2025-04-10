@@ -24,7 +24,7 @@ const uint32_t next_interval_MSP = 100;
 
 // OSD VALUES
 uint8_t osd_vbat = 0;
-uint16_t osd_rssi = 1250; // 1 - 1250
+uint16_t osd_rssi = 700; // 1 - 1125
 char craftname[15] = "CALIBRATING";
 int16_t osd_amperage = 0;
 uint16_t osd_mAhDrawn = 0;
@@ -545,11 +545,11 @@ void loop() {
     DesiredAnglePitch=0;
   }
 
-  send_gyro_to_airunit(KalmanAnglePitch, KalmanAngleRoll);
+  send_gyro_to_airunit(-KalmanAnglePitch, KalmanAngleRoll);
 
   crsf.update();
 
-  osd_rssi = (crsf.getChannel(10)-1000)*1.24+10;
+  osd_rssi = (crsf.getChannel(10)-990)*1124/1020+1;
 
   ReceiverValue[0] = constrain(crsf.getChannel(1), 1000, 2000) + TrimRoll;
   ReceiverValue[1] = constrain(crsf.getChannel(2), 1000, 2000) + TrimPitch;
