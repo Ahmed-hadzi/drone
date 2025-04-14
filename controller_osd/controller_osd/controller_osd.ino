@@ -545,7 +545,7 @@ void loop() {
     DesiredAnglePitch=0;
   }
 
-  send_gyro_to_airunit(-KalmanAnglePitch, KalmanAngleRoll);
+  send_gyro_to_airunit(KalmanAnglePitch, KalmanAngleRoll);
 
   crsf.update();
 
