@@ -2,7 +2,7 @@
  
 Servo ESC;     // create servo object to control the ESC
  
-const int pwmPin =  3;      // PWM pin
+const int pwmPin =  2;      // PWM pin
  
 #define MIN_PULSE_LENGTH 1000 // Minimum pulse length in Âµs
 #define MAX_PULSE_LENGTH 2000 // Maximum pulse length in Âµs
