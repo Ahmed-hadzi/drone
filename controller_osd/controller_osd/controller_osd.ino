@@ -14,6 +14,9 @@
 #define i2c_Address 0x3c
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+#define dropPin 14
+Servo dropServo;
+
 int looptime = 0;
 
 // OSD
@@ -357,6 +360,7 @@ void setup(){
   pinMode(21, INPUT);
 
   camServo.attach(camPin, 500, 2500);
+  dropServo.attach(dropPin, 500, 2500);
 
   pinMode(camPin, OUTPUT);
   pinMode(5, OUTPUT);
@@ -550,6 +554,22 @@ void loop() {
   crsf.update();
 
   osd_rssi = (crsf.getChannel(10)-990)*1124/1020+1;
+
+  if(!armed){
+    if(crsf.getChannel(11) > 1500){
+      dropServo.writeMicroseconds(map(crsf.getChannel(12), 1000, 2000, 500, 2500));
+    } else{
+      dropServo.writeMicroseconds(686);
+    }
+  }
+
+  if(armed){
+    if(crsf.getChannel(11) < 1500){
+    dropServo.writeMicroseconds(686);
+  } else{
+    dropServo.writeMicroseconds(2499);
+  }x 
+  }
 
   ReceiverValue[0] = constrain(crsf.getChannel(1), 1000, 2000) + TrimRoll;
   ReceiverValue[1] = constrain(crsf.getChannel(2), 1000, 2000) + TrimPitch;
@@ -807,7 +827,6 @@ void loop() {
     moveCamera(constrain((1.24*crsf.getChannel(6))-680, 500, 1800));
   }
 
-  Serial.println((1.24*crsf.getChannel(6))-680);
 
   battery_voltage();
   CurrentConsumed=Current*1000*0.004/3600+CurrentConsumed;
